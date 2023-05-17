@@ -17,6 +17,12 @@ namespace WinFormsAppCreateRequest
         {
             InitializeComponent();
             InitDataForHeader();
+            InitDataForMethod();
+        }
+
+        private void InitDataForMethod()
+        {
+            this.comboBox2.SelectedIndex = 0;
         }
 
         private void InitDataForHeader()
