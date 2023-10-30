@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -38,13 +40,26 @@ namespace WinFormsAppCreateRequest.Util
                     // Send the POST request
                     HttpResponseMessage response = await client.PostAsync(url, content);
 
+                    string responseContent = string.Empty;
                     // Check the response status
                     if (response.IsSuccessStatusCode)
                     {
-                        // Request succeeded, process the response
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine(responseContent);
+                        if (response.Content.Headers.ContentEncoding.Contains("gzip"))
+                        {
+                            using (Stream stream = await response.Content.ReadAsStreamAsync())
+                            using (GZipStream decompressionStream = new GZipStream(stream, CompressionMode.Decompress))
+                            using (StreamReader reader = new StreamReader(decompressionStream))
+                            {
+                                responseContent = await reader.ReadToEndAsync();
+                            }
+                        }
+                        else
+                        {
+                            // Request succeeded, process the response
+                            responseContent = await response.Content.ReadAsStringAsync();
+                        }
                         return responseContent;
+
                     }
                     else
                     {

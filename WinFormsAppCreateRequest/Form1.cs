@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinFormsAppCreateRequest.Util;
+using Dasync.Collections;
 
 namespace WinFormsAppCreateRequest
 {
@@ -69,8 +70,7 @@ namespace WinFormsAppCreateRequest
                 return;
             }
 
-            var dataHeader = DataHeader.GetDataHeaderFromView(this.dataGridView1.Rows);
-            var dataBody = this.textBox2.Text;
+
             if (method == Method.POST)
             {
                 Int32.TryParse(this.textBox3.Text, out int loop);
@@ -79,23 +79,28 @@ namespace WinFormsAppCreateRequest
                     MessageBox.Show("Điền giá trị lặp hợp lệ vào ô Loop", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-                List<Task<string>> tasks = new List<Task<string>>();
-                for(int i=0; i<loop; i++)
-                {
-                    tasks.Add(HttpRequest.PostRequest(url, dataHeader, dataBody));
-                }
-                await Task.WhenAll(tasks);
-
                 var respone = new StringBuilder();
-                foreach (var task in tasks)
+                List<int> numbers = new List<int>();
+                for (int i = 0; i < loop; i++)
                 {
-                    respone.Append("***********************").Append(Environment.NewLine);
-                    respone.Append(task.Result);
-                    respone.Append("***********************").Append(Environment.NewLine);
+                    numbers.Add(i);
                 }
+                await numbers.ParallelForEachAsync(async i =>
+                {
+                    var r = await ExcuteRequest();
+                    respone.Append($"*********{i}**********").Append(Environment.NewLine);
+                    respone.Append(r);
+                    respone.Append($"*********{i}**********").Append(Environment.NewLine);
+                });
                 this.textBox4.Text = respone.ToString();
             }
-
+        }
+        private async Task<string> ExcuteRequest()
+        {
+            var url = this.textBox1.Text;
+            var dataHeader = DataHeader.GetDataHeaderFromView(this.dataGridView1.Rows);
+            var requestBody = this.textBox2.Text;
+            return await HttpRequest.PostRequest(url, dataHeader, requestBody);
         }
 
         private void label3_Click(object sender, EventArgs e)
